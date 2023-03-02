@@ -20,3 +20,8 @@ mybatis-plus:
     db-config:
       #主键策略：ASSIGN_ID（雪花算法）
       id-type: ASSIGN_ID
+
+
+
+regie:
+  path:F:\updata_server
