@@ -59,7 +59,7 @@ public class CommonController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
+        return R.success(fileName);
 
 
     }

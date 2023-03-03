@@ -23,5 +23,5 @@ mybatis-plus:
 
 
 
-regie:
-  path:F:\updata_server
+reggie:
+  path: F:\updata_server\
