@@ -1,7 +1,8 @@
 package com.Reggie.dto;
 
-import com.itheima.reggie.entity.Setmeal;
-import com.itheima.reggie.entity.SetmealDish;
+import com.Reggie.Entity.Setmeal;
+import com.Reggie.Entity.SetmealDish;
+
 import lombok.Data;
 import java.util.List;
 

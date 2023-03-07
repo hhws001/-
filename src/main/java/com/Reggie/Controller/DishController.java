@@ -3,6 +3,7 @@ package com.Reggie.Controller;
 import com.Reggie.Common.R;
 import com.Reggie.Entity.Category;
 import com.Reggie.Entity.Dish;
+import com.Reggie.Entity.DishFlavor;
 import com.Reggie.Service.CategoryService;
 import com.Reggie.Service.DishFlavorService;
 import com.Reggie.Service.DishService;
@@ -90,7 +91,7 @@ public class DishController {
         return R.success("新增菜品成功");
     }
     @GetMapping("/list")
-    public R<List<Dish>> list(Dish dish){
+    public R<List<DishDto>> list(Dish dish){
 
         //构造查询条件
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
@@ -99,7 +100,36 @@ public class DishController {
         queryWrapper.eq(Dish::getStatus,1);
 
         List<Dish> list = dishService.list(queryWrapper);
-        //添加排序条件
-        return R.success(list);
+
+        List<DishDto> dishDtoList = list.stream().map((item) -> {
+            DishDto dishDto = new DishDto();
+            //对象拷贝（每一个list数据）
+            BeanUtils.copyProperties(item,dishDto);
+            Long categoryId = item.getCategoryId();  //分类id
+            //通过categoryId查询到category内容
+            Category category = categoryService.getById(categoryId);
+            //判空
+            if(category != null){
+                String categoryName = category.getName();
+                dishDto.setCategoryName(categoryName);
+            }
+
+            //获取当前菜品id
+            Long dishId = item.getId();
+
+            //构造条件构造器
+            LambdaQueryWrapper<DishFlavor> dishFlavorLambdaQueryWrapper= new LambdaQueryWrapper<>();
+            //添加查询条件
+            dishFlavorLambdaQueryWrapper.eq(dishId != null,DishFlavor::getDishId,dishId);
+            //select * from dish_flavors where dish_id = ?
+            List<DishFlavor> dishFlavors = dishFlavorService.list(dishFlavorLambdaQueryWrapper);
+
+            dishDto.setFlavors(dishFlavors);
+
+            return dishDto;
+        }).collect(Collectors.toList());
+
+        return R.success(dishDtoList);
     }
+
 }
