@@ -1,16 +1,34 @@
 package com.Reggie.utils;
 
-import com.aliyuncs.DefaultAcsClient;
-import com.aliyuncs.IAcsClient;
-import com.aliyuncs.dysmsapi.model.v20170525.SendSmsRequest;
-import com.aliyuncs.dysmsapi.model.v20170525.SendSmsResponse;
-import com.aliyuncs.exceptions.ClientException;
-import com.aliyuncs.profile.DefaultProfile;
+
+import com.aliyun.auth.credentials.Credential;
+import com.aliyun.auth.credentials.provider.StaticCredentialProvider;
+import com.aliyun.core.http.HttpClient;
+import com.aliyun.core.http.HttpMethod;
+import com.aliyun.core.http.ProxyOptions;
+import com.aliyun.httpcomponent.httpclient.ApacheAsyncHttpClientBuilder;
+import com.aliyun.sdk.service.dysmsapi20170525.models.*;
+import com.aliyun.sdk.service.dysmsapi20170525.*;
+import com.google.gson.Gson;
+import darabonba.core.RequestConfiguration;
+import darabonba.core.client.ClientOverrideConfiguration;
+import darabonba.core.utils.CommonUtil;
+import darabonba.core.TeaPair;
+
+//import javax.net.ssl.KeyManager;
+//import javax.net.ssl.X509TrustManager;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 短信发送工具类
  */
 public class SMSUtils {
+
+
     /**
      * 发送短信
      * @param signName 签名
@@ -19,21 +37,74 @@ public class SMSUtils {
      * @param param 参数
      */
     public static void sendMessage(String signName, String templateCode,String phoneNumbers,String param){
-        DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", "LTAI5tRswte1yJdmhAt18e25", "EJrThl8OB0WDk1GEJKZMJqQxwRBhst");
-        IAcsClient client = new DefaultAcsClient(profile);
+        // HttpClient Configuration
+        /*HttpClient httpClient = new ApacheAsyncHttpClientBuilder()
+                .connectionTimeout(Duration.ofSeconds(10)) // Set the connection timeout time, the default is 10 seconds
+                .responseTimeout(Duration.ofSeconds(10)) // Set the response timeout time, the default is 20 seconds
+                .maxConnections(128) // Set the connection pool size
+                .maxIdleTimeOut(Duration.ofSeconds(50)) // Set the connection pool timeout, the default is 30 seconds
+                // Configure the proxy
+                .proxy(new ProxyOptions(ProxyOptions.Type.HTTP, new InetSocketAddress("<your-proxy-hostname>", 9001))
+                        .setCredentials("<your-proxy-username>", "<your-proxy-password>"))
+                // If it is an https connection, you need to configure the certificate, or ignore the certificate(.ignoreSSL(true))
+                .x509TrustManagers(new X509TrustManager[]{})
+                .keyManagers(new KeyManager[]{})
+                .ignoreSSL(false)
+                .build();*/
 
-        SendSmsRequest request = new SendSmsRequest();
-        request.setSysRegionId("cn-hangzhou");
-        request.setPhoneNumbers(phoneNumbers);
-        request.setSignName(signName);
-        request.setTemplateCode(templateCode);
-        request.setTemplateParam("{\"code\":\""+param+"\"}");
+        // Configure Credentials authentication information, including ak, secret, token
+        StaticCredentialProvider provider = StaticCredentialProvider.create(Credential.builder()
+                .accessKeyId("LTAI5tNc1xuymUmYGEZ49EZc")
+                .accessKeySecret("pHAWVzjqlwx8LJwg2VnacadwGoJqmf")
+                //.securityToken("<your-token>") // use STS token
+                .build());
+
+        // Configure the Client
+        AsyncClient client = AsyncClient.builder()
+                .region("cn-hangzhou") // Region ID
+                //.httpClient(httpClient) // Use the configured HttpClient, otherwise use the default HttpClient (Apache HttpClient)
+                .credentialsProvider(provider)
+                //.serviceConfiguration(Configuration.create()) // Service-level configuration
+                // Client-level configuration rewrite, can set Endpoint, Http request parameters, etc.
+                .overrideConfiguration(
+                        ClientOverrideConfiguration.create()
+                                .setEndpointOverride("dysmsapi.aliyuncs.com")
+                        //.setConnectTimeout(Duration.ofSeconds(30))
+                )
+                .build();
+
+        // Parameter settings for API request
+        SendSmsRequest sendSmsRequest = SendSmsRequest.builder()
+                .phoneNumbers(phoneNumbers)
+                .signName(signName)
+                .templateCode(templateCode)
+                .templateParam("{\"code\":\""+param+"\"}")
+                // Request-level configuration rewrite, can set Http request parameters, etc.
+                // .requestConfiguration(RequestConfiguration.create().setHttpHeaders(new HttpHeaders()))
+                .build();
+
+        // Asynchronously get the return value of the API request
+        CompletableFuture<SendSmsResponse> response = client.sendSms(sendSmsRequest);
+        // Synchronously get the return value of the API request
+        SendSmsResponse resp = null;
         try {
-            SendSmsResponse response = client.getAcsResponse(request);
-            System.out.println("短信发送成功");
-        }catch (ClientException e) {
-            e.printStackTrace();
+            resp = response.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
+        System.out.println(new Gson().toJson(resp));
+        // Asynchronous processing of return values
+        /*response.thenAccept(resp -> {
+            System.out.println(new Gson().toJson(resp));
+        }).exceptionally(throwable -> { // Handling exceptions
+            System.out.println(throwable.getMessage());
+            return null;
+        });*/
+
+        // Finally, close the client
+        client.close();
     }
 
 }

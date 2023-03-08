@@ -60,4 +60,19 @@ public class AddressBookController {
 
         return R.success(addressBook);
     }
+    @GetMapping("/default")
+    public R<AddressBook> getDefault(){
+        //当前用户id
+        Long currentId = BaseContext.getCurrentId();
+
+        //创建条件构造器
+        LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AddressBook::getUserId,currentId);
+        queryWrapper.eq(AddressBook::getIsDefault,1);
+
+        AddressBook addressBook = addressBookService.getOne(queryWrapper);
+
+        return R.success(addressBook);
+    }
+
 }
